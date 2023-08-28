@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { IsNotEmpty, IsEmail, IsString } from 'class-validator';
+import { Token } from '../../auth/entities/token.entity';
 
 @Entity()
 export class User {
@@ -10,23 +11,26 @@ export class User {
   @IsNotEmpty()
   username: string;
 
-  @Column()
-  @IsEmail()
-  @IsNotEmpty()
+  @Column({ nullable: true })
+  // @IsEmail()
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   @IsString()
-  @IsNotEmpty()
   phone_number: string;
 
-  @Column()
-  @IsNotEmpty()
+  @Column({ nullable: true })
   password_hash: string;
+
+  @Column({ default: false })
+  is_tmp: boolean;
 
   @Column({ default: false })
   is_verified_email: boolean;
 
   @Column({ default: false })
   is_verified_phone: boolean;
+
+  @OneToMany(() => Token, (token) => token.user)
+  tokens: Token[];
 }

@@ -1,9 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
 import { LoggerMiddleware } from './commons/logger/logger.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './apis/users/users.module';
+import { AuthModule } from './apis/auth/auth.module';
 
 @Module({
   imports: [
@@ -15,13 +15,14 @@ import { UsersModule } from './apis/users/users.module';
       username: process.env.DATABASE_DEV_USERNAME,
       password: process.env.DATABASE_DEV_PASSWORD,
       database: process.env.DATABASE_DEV_DATABASE,
-      entities: [__dirname + '/../**/*.entity.{js.ts}'],
+      entities: [__dirname + '/apis/**/*.entity.*'],
       synchronize: true,
       logging: true,
     }),
     UsersModule,
+    AuthModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [],
 })
 export class AppModule implements NestModule {
