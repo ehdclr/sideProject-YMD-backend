@@ -1,9 +1,12 @@
+import * as redisStore from 'cache-manager-redis-store';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerMiddleware } from './commons/logger/logger.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { RedisClientOptions } from 'redis';
 
 @Module({
   imports: [
@@ -18,6 +21,13 @@ import { AuthModule } from './apis/auth/auth.module';
       entities: [__dirname + '/apis/**/*.entity.*'],
       synchronize: true,
       logging: true,
+    }),
+    CacheModule.register<RedisClientOptions>({
+      store: redisStore,
+      url: 'redis://localhost:6379', //localhost용
+      // url : "redis://redis:6379" // docker용
+      isGlobal: true,
+      ttl: 60 * 60 * 24 * 14, // 전역 ttl 기본 설정
     }),
     UsersModule,
     AuthModule,

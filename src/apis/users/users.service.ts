@@ -29,9 +29,18 @@ export class UsersSerivce {
       where: { username: username, is_tmp: true },
     });
 
+    // 이메일 인증 확인
+    if (!userInfo.is_verified_email) {
+      throw new ConflictException('이메일 인증이 되지 않았습니다!');
+    }
+
+    //(휴대폰 인증 추후 추가 Optional)
+
     const hashedPassword = await bcrypt.hash(password, 10);
+    userInfo.email = email;
     userInfo.password_hash = hashedPassword;
     userInfo.is_tmp = false;
+    userInfo.phone_number = phone_number;
 
     const isExistEmail = await this.findOneByEmail({ email });
 

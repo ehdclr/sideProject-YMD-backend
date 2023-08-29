@@ -7,9 +7,11 @@ import { UsersSerivce } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Token } from './entities/token.entity';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    JwtModule.register({}),
     TypeOrmModule.forFeature([User, OauthUser, Token]),
 
     forwardRef(() => UsersModule),

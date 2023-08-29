@@ -4,6 +4,8 @@ import {
   Controller,
   Get,
   Post,
+  Res,
+  Response,
   UseFilters,
   UseInterceptors,
 } from '@nestjs/common';
@@ -11,6 +13,7 @@ import { AuthService } from './auth.service';
 import { SendEmailDto, SendPhoneDto } from './dto/verify-email.input';
 import { SuccessInterceptor } from 'src/commons/interceptors/success.interceptor';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { loginDto } from './dto/auth.input';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -103,4 +106,24 @@ export class AuthController {
 
   //   return result;
   // }
+
+  //!login
+  @Post('login')
+  async login(
+    @Body() { username, password }: loginDto,
+    @Res() res,
+  ): Promise<object> {
+    const result = await this.authService.login({ username, password });
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      path: '/',
+    });
+
+    return res.json({
+      statusCode: result.statusCode,
+      message: result.message,
+      accessToken: result.accessToken,
+    });
+  }
 }

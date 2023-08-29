@@ -1,13 +1,19 @@
 import {
+  IAuthServiceLogin,
   IAUthServiceSendEmail,
+  IAuthServiceUser,
   IAuthServiceUsername,
+  LoginResponse,
 } from './interfaces/auth-service.interface';
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  Res,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import * as crypto from 'crypto';
@@ -15,6 +21,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Token } from './entities/token.entity';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +33,9 @@ export class AuthService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(Token)
     private readonly tokensRepository: Repository<Token>,
+    private readonly jwtService: JwtService,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   //아이디 중복검사하는 로직 -> 데이터베이스 임시 저장 -> 이후 이메일 전화번호 인증을 위해
@@ -52,7 +65,8 @@ export class AuthService {
     token.token = tokenValue;
     token.type = 'email';
     token.createdAt = new Date();
-    token.expiresAt = new Date(Date.now() + 1000 * 60 * 3); //3분 후 만료'
+    token.expiresAt = new Date(Date.now() + 1000 * 60 * 3); //3분 후 만료
+
     token.user = tmpUser;
 
     this.tokensRepository.save(token);
@@ -94,6 +108,8 @@ export class AuthService {
     }
 
     if (tokenVerify.expiresAt < new Date()) {
+      //만료기간이 지난 토큰 제거(입력 시에만 삭제됨)
+      await this.tokensRepository.delete({ token: token });
       throw new BadRequestException('토큰 만료시간이 지났습니다.');
     }
 
@@ -118,5 +134,60 @@ export class AuthService {
 
   //TODO 휴대폰 인증 로직
 
-  //TODO 로그인 로직
+  //TODO 로그인 로직 - passport validate에서 불러와도됨
+  async login({
+    username,
+    password,
+  }: IAuthServiceLogin): Promise<LoginResponse> {
+    //로그인 유저 아이디
+    const user = await this.usersRepository.findOne({ where: { username } });
+    if (!user) {
+      throw new UnprocessableEntityException('사용자가 없습니다!');
+    }
+
+    const isCheckPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isCheckPassword) {
+      throw new UnprocessableEntityException('암호가 틀렸습니다!');
+    }
+
+    const refreshToken = this.setRefreshToken({ user });
+
+    const accessToken = this.getAccessToken({ user });
+
+    return {
+      statusCode: 200,
+      message: '로그인에 성공 하였습니다.',
+      accessToken: `Bearer ${accessToken}`,
+      refreshToken: refreshToken,
+    };
+  }
+
+  getAccessToken({ user }: IAuthServiceUser): string {
+    return this.jwtService.sign(
+      {
+        sub: user.user_id,
+        username: user.username,
+      },
+      { secret: process.env.JWT_ACCESS_TOKEN_KEY, expiresIn: '10m' },
+    );
+  }
+
+  setRefreshToken({ user }: IAuthServiceUser): string {
+    return this.jwtService.sign(
+      { sub: user.user_id },
+      { secret: process.env.JWT_REFRESH_TOKEN_KEY, expiresIn: '2w' },
+    );
+  }
+
+  //로그아웃 했을 때 refresh 토큰을 레디스에저장
+  async addBlackList(refreshToken: string): Promise<void> {
+    const expiresIn: number = 60 * 60 * 24 * 14;
+    await this.cacheManager.set(refreshToken, true, expiresIn); //2주
+  }
+
+  //
+  async checkBlackList(refreshToken: string): Promise<boolean> {
+    const result = await this.cacheManager.get(refreshToken);
+    return !!result;
+  }
 }

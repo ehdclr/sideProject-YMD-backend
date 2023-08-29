@@ -3,7 +3,6 @@ version: '3.7'
 
 services:
 
-
     postgres:
           image: postgres:latest
           container_name: my_postgres
@@ -13,3 +12,10 @@ services:
             POSTGRES_DB: ${POSTGRES_DB}
           ports: 
             - 5432:5432 #postgresQL 포트번호임
+    
+
+    redis:
+          image: redis:latest
+          container_name: my_redis
+          ports:
+            - 6379:6379
