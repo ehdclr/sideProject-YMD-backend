@@ -1,12 +1,15 @@
 import { HttpExceptionFilter } from '../../commons/filters/http-exception.filter';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Post,
+  Req,
   Res,
   Response,
   UseFilters,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -14,7 +17,10 @@ import { SendEmailDto, SendPhoneDto } from './dto/verify-email.input';
 import { SuccessInterceptor } from 'src/commons/interceptors/success.interceptor';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { loginDto } from './dto/auth.input';
-
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/commons/decorators/auth.decorator';
+import { Request } from 'express';
+import * as cookie from 'cookie';
 @ApiTags('Auth')
 @Controller('auth')
 @UseInterceptors(SuccessInterceptor)
@@ -125,5 +131,20 @@ export class AuthController {
       message: result.message,
       accessToken: result.accessToken,
     });
+  }
+
+  @UseGuards(AuthGuard('access'))
+  @Post('logout')
+  async logout(@Req() req: Request): Promise<object> {
+    const cookies = cookie.parse(req.headers.cookie || '');
+    const refreshToken = cookies['refreshToken'];
+
+    if (!refreshToken) {
+      throw new BadRequestException('리프레쉬 토큰이 없습니다.(로그인 안됨)');
+    }
+
+    this.authService.logout({ refreshToken });
+
+    return { StatusCode: 200, message: '로그아웃에 성공했습니다.' };
   }
 }

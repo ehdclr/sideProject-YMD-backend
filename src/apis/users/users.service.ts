@@ -9,7 +9,7 @@ import {
 } from './interfaces/users-service.inerface';
 
 @Injectable()
-export class UsersSerivce {
+export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,

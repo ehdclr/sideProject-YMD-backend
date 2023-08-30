@@ -1,5 +1,6 @@
 import {
   IAuthServiceLogin,
+  IAuthServiceLogoutRefresh,
   IAUthServiceSendEmail,
   IAuthServiceUser,
   IAuthServiceUsername,
@@ -12,7 +13,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  Res,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
@@ -46,7 +46,11 @@ export class AuthService {
     if (isExistUser) {
       return new ConflictException('이미 있는 유저아이디 입니다.');
     }
-    await this.usersRepository.save({ username, is_tmp: true }); //사용자 임시로 저장
+    try {
+      await this.usersRepository.save({ username, is_tmp: true }); //사용자 임시로 저장
+    } catch (error) {
+      throw new InternalServerErrorException('유저 정보를 저장 못했습니다.');
+    }
 
     return { message: '사용자 유저아이디 중복확인 완료' };
   }
@@ -69,7 +73,6 @@ export class AuthService {
 
     token.user = tmpUser;
 
-    this.tokensRepository.save(token);
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -90,11 +93,12 @@ export class AuthService {
     };
 
     try {
+      await this.tokensRepository.save(token);
       await transporter.sendMail(mailOptions);
-      return { message: '이메일 전송에 성공하였습니다.' };
     } catch (error) {
-      throw new InternalServerErrorException('서버 에러!');
+      throw new InternalServerErrorException('이메일 전송에 실패하였습니다!');
     }
+    return { message: '이메일 전송에 성공하였습니다.' };
   }
 
   async verifyEmail(token: string): Promise<object> {
@@ -179,8 +183,24 @@ export class AuthService {
     );
   }
 
+  //로그아웃 로직
+  async logout({ refreshToken }: IAuthServiceLogoutRefresh) {
+    //블랙 리스트에 추가 (레디스)
+    await this.addBlackList(refreshToken);
+
+    //잘 추가 되었는지 확인
+    const isBlacklisted = await this.checkBlackList(refreshToken);
+    if (!isBlacklisted) {
+      throw new InternalServerErrorException('로그아웃 되지 않았습니다!');
+    }
+  }
+
   //로그아웃 했을 때 refresh 토큰을 레디스에저장
   async addBlackList(refreshToken: string): Promise<void> {
+    try {
+    } catch (error) {
+      throw new InternalServerErrorException('로그아웃 할 수 없습니다!');
+    }
     const expiresIn: number = 60 * 60 * 24 * 14;
     await this.cacheManager.set(refreshToken, true, expiresIn); //2주
   }

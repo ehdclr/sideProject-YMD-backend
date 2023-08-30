@@ -2,15 +2,13 @@ import { HttpExceptionFilter } from '../../commons/filters/http-exception.filter
 import {
   Body,
   Controller,
-  Get,
   Post,
   UseFilters,
   UseInterceptors,
 } from '@nestjs/common';
 import { SignupUserDto } from './dto/signup-user.input';
-import { UsersSerivce } from './users.service';
+import { UsersService } from './users.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { User } from './entities/user.entity';
 import { SuccessInterceptor } from 'src/commons/interceptors/success.interceptor';
 
 @ApiTags('User')
@@ -18,7 +16,7 @@ import { SuccessInterceptor } from 'src/commons/interceptors/success.interceptor
 @UseInterceptors(SuccessInterceptor)
 @UseFilters(HttpExceptionFilter)
 export class UsersController {
-  constructor(private readonly usersService: UsersSerivce) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Post('/signup')
   @ApiOperation({ summary: '회원가입' })
