@@ -1,9 +1,16 @@
 export interface IUsersServiceCreate {
-  username: string;
   password: string;
   email: string;
-  phone_number: string;
 }
 export interface IUsersServiceCheckEmail {
   email: string;
+}
+
+export interface IUsersServiceUserInfo {
+  userId?: number;
+  nickname: string;
+  age: number;
+  sex: string;
+  user_image?: string;
+  phone_number: string;
 }

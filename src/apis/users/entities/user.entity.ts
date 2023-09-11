@@ -1,15 +1,18 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { IsNotEmpty, IsEmail, IsString } from 'class-validator';
 import { Token } from '../../auth/entities/token.entity';
+import { UserInfo } from './user-info.entity';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
   user_id: number;
-
-  @Column()
-  @IsNotEmpty()
-  username: string;
 
   @Column({ nullable: true })
   @IsEmail()
@@ -31,6 +34,14 @@ export class User {
   @Column({ default: false })
   is_verified_phone: boolean;
 
+  @Column({ default: 'local', nullable: false })
+  provider: string;
+
   @OneToMany(() => Token, (token) => token.user)
   tokens: Token[];
+
+  @OneToOne(() => UserInfo, (info) => info.user)
+  user_info: UserInfo;
+
+
 }

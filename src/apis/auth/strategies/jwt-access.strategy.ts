@@ -3,7 +3,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 type Payload = {
   sub: string;
-  username: string;
+  email: string;
 };
 
 export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
@@ -17,7 +17,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
   validate(payload: Payload): object {
     return {
       id: payload.sub,
-      username: payload.username,
+      email: payload.email,
     };
   }
 }

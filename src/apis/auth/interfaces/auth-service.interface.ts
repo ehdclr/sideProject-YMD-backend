@@ -1,16 +1,15 @@
 import { User } from 'src/apis/users/entities/user.entity';
 
 export interface IAuthServiceUsername {
-  username: string;
+  email: string;
 }
 
 export interface IAUthServiceSendEmail {
   email: string;
-  username: string;
 }
 
 export interface IAuthServiceLogin {
-  username: string;
+  email: string;
   password: string;
 }
 

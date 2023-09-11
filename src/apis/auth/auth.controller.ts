@@ -3,22 +3,25 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Get,
   Post,
   Req,
   Res,
-  Response,
   UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SendEmailDto, SendPhoneDto } from './dto/verify-email.input';
+import { SendEmailDto } from './dto/verify-email.input';
 import { SuccessInterceptor } from 'src/commons/interceptors/success.interceptor';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiHeader,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { loginDto } from './dto/auth.input';
 import { AuthGuard } from '@nestjs/passport';
-import { CurrentUser } from 'src/commons/decorators/auth.decorator';
 import { Request } from 'express';
 import * as cookie from 'cookie';
 @ApiTags('Auth')
@@ -29,46 +32,23 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @ApiResponse({
-    status: 200,
-    description: '사용자 유저아이디 중복확인 완료.',
-  })
-  @ApiResponse({
-    status: 409,
-    description: '이미 있는 유저아이디 입니다.',
-  })
-  @ApiBody({
-    description: ' username(사용자 아이디)',
-    schema: {
-      type: 'object',
-      properties: {
-        username: {
-          type: 'string',
-        },
-      },
-    },
-  })
-  @ApiOperation({ summary: '사용자 아이디 중복체크' })
-  @Post('check-username')
-  async checkUsername(@Body('username') username: string): Promise<object> {
-    const result = await this.authService.isCheckUsername({ username });
-    return result;
-  }
-
-  @ApiResponse({
-    status: 200,
+    status: 201,
     description: '이메일 전송에 성공하였습니다.',
   })
   @ApiResponse({
     status: 409,
-    description: '이미 있는 유저아이디 입니다.',
+    description: '이미 등록된 메일입니다!',
+  })
+  @ApiResponse({
+    status: 501,
+    description: '잘못된 요청입니다.',
   })
   @ApiOperation({ summary: '이메일 인증코드 전송' })
   //이메일 보내는 로직
   @Post('send-email')
-  async sendEmail(@Body() { email, username }: SendEmailDto): Promise<object> {
+  async sendEmail(@Body() { email }: SendEmailDto): Promise<object> {
     const result = await this.authService.sendVerificationEmail({
       email,
-      username,
     });
 
     return result;
@@ -76,12 +56,24 @@ export class AuthController {
 
   //이메일 인증 로직
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: '이메일 인증에 성공하였습니다.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '토큰 만료시간이 지났습니다.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '토큰이 존재하지 않습니다.',
   })
   @ApiResponse({
     status: 404,
     description: '유저가 맞지 않습니다.',
+  })
+  @ApiResponse({
+    status: 501,
+    description: '잘못된 요청입니다.',
   })
   @ApiBody({
     description: 'token(이메일 인증 토큰)',
@@ -100,26 +92,29 @@ export class AuthController {
     return await this.authService.verifyEmail(token);
   }
 
-  //TODO 추후 추가
-  // @Post('send-phone')
-  // async sendPhone(
-  //   @Body() { phone_number, username }: SendPhoneDto,
-  // ): Promise<void> {
-  //   const result = await this.authService.sendVerificationPhone({
-  //     phone_number,
-  //     username,
-  //   });
-
-  //   return result;
-  // }
-
   //!login
+  @ApiResponse({
+    status: 201,
+    description: '로그인에 성공하였습니다.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '암호가 틀렸습니다!',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '사용자가 없습니다!',
+  })
+  @ApiResponse({
+    status: 501,
+    description: '잘못된 요청입니다.',
+  })
   @Post('login')
   async login(
-    @Body() { username, password }: loginDto,
+    @Body() { email, password }: loginDto,
     @Res() res,
   ): Promise<object> {
-    const result = await this.authService.login({ username, password });
+    const result = await this.authService.login({ email, password });
 
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
@@ -133,6 +128,31 @@ export class AuthController {
     });
   }
 
+  //TODO !Oauth로그인
+  // @UseGuards(AuthGuard('google'))
+  // @Post('oauthlogin')
+  // async oauthLogin(@Req() req): Promise<any> {
+  //   //
+  //   const user = req.user; //로그인된 사용자 정보 가져오기
+  //   this.authService.oauthLogin({ user });
+  // }
+
+  @ApiResponse({
+    status: 201,
+    description: '로그아웃에 성공했습니다.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '로그아웃 되지 않았습니다!',
+  })
+  @ApiResponse({
+    status: 501,
+    description: '잘못된 요청입니다!',
+  })
+  @ApiHeader({
+    name: 'Cookie',
+    description: '헤더 안에 있는 쿠키값 ',
+  })
   @UseGuards(AuthGuard('access'))
   @Post('logout')
   async logout(@Req() req: Request): Promise<object> {
@@ -143,8 +163,8 @@ export class AuthController {
       throw new BadRequestException('리프레쉬 토큰이 없습니다.(로그인 안됨)');
     }
 
-    this.authService.logout({ refreshToken });
+    await this.authService.logout({ refreshToken });
 
-    return { StatusCode: 200, message: '로그아웃에 성공했습니다.' };
+    return { StatusCode: 201, message: '로그아웃에 성공했습니다.' };
   }
 }
