@@ -5,7 +5,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { IsNotEmpty, IsEmail, IsString } from 'class-validator';
+import { IsEmail } from 'class-validator';
 import { Token } from '../../auth/entities/token.entity';
 import { UserInfo } from './user-info.entity';
 
@@ -17,10 +17,6 @@ export class User {
   @Column({ nullable: true })
   @IsEmail()
   email: string;
-
-  @Column({ nullable: true })
-  @IsString()
-  phone_number: string;
 
   @Column({ nullable: true })
   password_hash: string;
@@ -42,6 +38,4 @@ export class User {
 
   @OneToOne(() => UserInfo, (info) => info.user)
   user_info: UserInfo;
-
-
 }

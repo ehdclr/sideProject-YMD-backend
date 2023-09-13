@@ -49,14 +49,14 @@ export class UsersController {
   //   return this.usersService.oauthSignUp();
   // }
 
-  @Post('/:user-id/userinfo')
+  @Post('/:userId/userinfo')
   @ApiOperation({ summary: '사용자 추가정보' })
   @ApiResponse({ status: 201, description: '사용자 정보 등록 완료.' })
   @ApiResponse({ status: 404, description: '사용자 아이디 값이 없습니다.' })
   @ApiResponse({ status: 409, description: '이미 등록된 닉네임입니다!' })
   @ApiResponse({ status: 501, description: '잘못된 요청입니다.' })
   async addUserInfo(
-    @Param('user-id') userId: number,
+    @Param('userId') userId: number,
     @Body() adduserInfoDto: AddUserInfoDto,
   ): Promise<any> {
     return this.usersService.addUserInfo({ userId, ...adduserInfoDto });
