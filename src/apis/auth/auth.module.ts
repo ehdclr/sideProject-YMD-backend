@@ -10,7 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { UserInfo } from '../users/entities/user-info.entity';
-import { GoogleStrategy } from './strategies/oauth-google.strategy';
+// import { GoogleStrategy } from './strategies/oauth-google.strategy';
 import { PassportModule } from '@nestjs/passport';
 
 @Module({
@@ -27,7 +27,7 @@ import { PassportModule } from '@nestjs/passport';
     UsersService,
     JwtAccessStrategy,
     JwtRefreshStrategy,
-    GoogleStrategy,
+    // GoogleStrategy,
   ],
 })
 export class AuthModule {}

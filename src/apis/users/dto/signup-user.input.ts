@@ -26,4 +26,7 @@ export class AddUserInfoDto {
 
   @ApiProperty({ description: '전화번호' })
   phone_number: string;
+
+  @ApiProperty({ description: '이름' })
+  name: string;
 }

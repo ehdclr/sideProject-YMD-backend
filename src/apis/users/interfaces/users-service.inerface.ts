@@ -13,4 +13,5 @@ export interface IUsersServiceUserInfo {
   sex: string;
   user_image?: string;
   phone_number: string;
+  name: string;
 }

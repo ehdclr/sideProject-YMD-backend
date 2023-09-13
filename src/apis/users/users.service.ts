@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import {
   IUsersServiceCheckEmail,
@@ -23,6 +23,7 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(UserInfo)
     private readonly userInfoRepository: Repository<UserInfo>,
+    private readonly datasource: DataSource,
   ) {}
 
   //이메일이 기존에 있는 이메일인지
@@ -34,10 +35,15 @@ export class UsersService {
 
   // local 사용자용 회원가입
   async create(SignupUserDto: IUsersServiceCreate): Promise<object> {
+    const queryRunner = this.datasource.createQueryRunner();
+    await queryRunner.connect();
+
+    await queryRunner.startTransaction();
+
     try {
       const { password, email } = SignupUserDto;
 
-      const user = await this.usersRepository.findOne({
+      const user = await queryRunner.manager.findOne(User, {
         where: { email: email, is_tmp: true },
       });
 
@@ -54,11 +60,15 @@ export class UsersService {
       user.is_tmp = false;
       user.provider = 'local';
 
-      await this.usersRepository.save(user);
+      await queryRunner.manager.save(user);
+      await queryRunner.commitTransaction();
 
       return { statusCode: 201, message: '회원가입 성공' };
     } catch (err) {
+      await queryRunner.rollbackTransaction();
       throw new NotImplementedException('잘못된 요청입니다');
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -70,9 +80,13 @@ export class UsersService {
 
   //TODO oauth local 모두 가입과정에서 필요한 사용자 추가 정보
   async addUserInfo(addUserInfoDto: IUsersServiceUserInfo) {
+    const queryRunner = this.datasource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
       //사용자 아이디 값
-      const { userId, nickname, age, sex, phone_number } = addUserInfoDto;
+      const { userId, nickname, age, sex, phone_number, name } = addUserInfoDto;
       let user_image = addUserInfoDto.user_image;
 
       user_image = user_image ? user_image : null;
@@ -81,11 +95,10 @@ export class UsersService {
         throw new NotFoundException('사용자 아이디 값이 없습니다.');
       }
 
-      const user = await this.usersRepository.findOne({
+      const user = await queryRunner.manager.findOne(User, {
         where: { user_id: userId },
       });
-
-      const checkNickname = await this.userInfoRepository.findOne({
+      const checkNickname = await queryRunner.manager.findOne(UserInfo, {
         where: { nickname },
       });
 
@@ -93,21 +106,29 @@ export class UsersService {
         throw new ConflictException('이미 등록된 닉네임입니다!');
       }
 
-      this.userInfoRepository.save({
+      const userInfo = this.userInfoRepository.create({
         nickname,
         age,
         sex,
         user_image,
         phone_number,
         user,
+        name,
       });
+
+      await queryRunner.manager.save(userInfo);
+      await queryRunner.commitTransaction();
 
       return {
         statusCode: 201,
         message: '회원가입 사용자 정보 등록 완료.',
       };
     } catch (err) {
+      await queryRunner.rollbackTransaction();
+      console.error(err);
       throw new NotImplementedException('잘못된 요청입니다');
+    } finally {
+      await queryRunner.release();
     }
   }
 

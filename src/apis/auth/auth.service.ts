@@ -18,7 +18,7 @@ import * as nodemailer from 'nodemailer';
 import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Token } from './entities/token.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -38,18 +38,23 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
+    private readonly dataSource: DataSource,
   ) {}
 
   async sendVerificationEmail({
     email,
   }: IAUthServiceSendEmail): Promise<object> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
       //이미 있는 메일인지 확인
       let isExist = await this.usersRepository.findOne({
         where: { email, is_tmp: true },
       });
-      //이메일 인증된 회원이면 에러 처리!
-      const emailVerifyUser = await this.usersRepository.findOne({
+
+      const emailVerifyUser = await queryRunner.manager.findOne(User, {
         where: { email, is_tmp: false, is_verified_email: true },
       });
 
@@ -61,7 +66,7 @@ export class AuthService {
 
       //임시 아이디 없으면, 다시 재할당
       if (!isExist) {
-        isExist = await this.usersRepository.save({ email, is_tmp: true });
+        isExist = await queryRunner.manager.save(User, { email, is_tmp: true });
       }
 
       const token = new Token();
@@ -91,17 +96,25 @@ export class AuthService {
         `,
       };
 
-      await this.tokensRepository.save(token);
+      await queryRunner.manager.save(token);
+      await queryRunner.commitTransaction();
       await transporter.sendMail(mailOptions);
       return { statusCode: 201, message: '이메일 전송에 성공하였습니다.' };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new NotImplementedException('잘못된 요청입니다');
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async verifyEmail(token: string): Promise<object> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      const tokenVerify = await this.tokensRepository.findOne({
+      const tokenVerify = await queryRunner.manager.findOne(Token, {
         where: { token: token },
         relations: ['user'],
       });
@@ -112,11 +125,11 @@ export class AuthService {
 
       if (tokenVerify.expiresAt < new Date()) {
         //만료기간이 지난 토큰 제거(입력 시에만 삭제됨)
-        await this.tokensRepository.delete({ token: token });
+        await queryRunner.manager.delete(Token, { token: token });
         throw new BadRequestException('토큰 만료시간이 지났습니다.');
       }
 
-      const user = await this.usersRepository.findOne({
+      const user = await queryRunner.manager.findOne(User, {
         where: {
           email: tokenVerify.user.email,
         },
@@ -127,14 +140,17 @@ export class AuthService {
       }
 
       user.is_verified_email = true;
-      await this.usersRepository.save(user);
+      await queryRunner.manager.save(user);
 
       //사용한 토큰은 삭제
-      await this.tokensRepository.remove(tokenVerify);
-
+      await queryRunner.manager.remove(tokenVerify);
+      await queryRunner.commitTransaction();
       return { statusCode: 201, message: '이메일 인증에 성공하였습니다.' };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new NotImplementedException('잘못된 요청입니다.');
+    } finally {
+      await queryRunner.release();
     }
   }
 

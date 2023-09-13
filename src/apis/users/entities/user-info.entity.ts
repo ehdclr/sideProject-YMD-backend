@@ -2,6 +2,7 @@ import { IsNotEmpty } from 'class-validator';
 import {
   Column,
   Entity,
+  JoinColumn,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -34,7 +35,11 @@ export class UserInfo {
   user_image: string;
 
   @OneToOne(() => User, (user) => user.user_info)
+  @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Column()
+  userId: number;
 
   @OneToMany(() => Follow, (follow) => follow.follower)
   following: Follow[];
