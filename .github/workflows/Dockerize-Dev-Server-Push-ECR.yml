@@ -30,15 +30,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Mask Docker password
-        run: |
-          echo "DOCKER_CONFIG=$HOME/.docker" >> $GITHUB_ENV
-          MASKED_PASSWORD=$(echo $DOCKER_CONFIG | jq -r '.auths."https://index.docker.io/v1/".auth' | base64 --decode | awk -F: '{print $2}')
-          echo "::add-mask::$MASKED_PASSWORD"
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
 
       - name: Build tag, and push image to Amazon ECR
         id: build-image
