@@ -1,5 +1,4 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { validate } from 'class-validator';
 import { Strategy } from 'passport-jwt';
 
 type RefreshPayload = {

@@ -2,15 +2,31 @@ import { HttpExceptionFilter } from '../../commons/filters/http-exception.filter
 import {
   Body,
   Controller,
+  Get,
   Param,
   Post,
   UseFilters,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AddUserInfoDto, SignupUserDto } from './dto/signup-user.input';
+import {
+  AddFollowDto,
+  AddUserInfoDto,
+  SignupUserDto,
+} from './dto/signup-user.input';
 import { UsersService } from './users.service';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { SuccessInterceptor } from 'src/commons/interceptors/success.interceptor';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/commons/decorators/auth.decorator';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('User')
 @Controller('users')
@@ -49,20 +65,77 @@ export class UsersController {
   //   return this.usersService.oauthSignUp();
   // }
 
-  @Post('/:userId/userinfo')
+  @Post('/:email/userinfo')
   @ApiOperation({ summary: '사용자 추가정보' })
   @ApiResponse({ status: 201, description: '사용자 정보 등록 완료.' })
   @ApiResponse({ status: 404, description: '사용자 아이디 값이 없습니다.' })
   @ApiResponse({ status: 409, description: '이미 등록된 닉네임입니다!' })
   @ApiResponse({ status: 501, description: '잘못된 요청입니다.' })
   async addUserInfo(
-    @Param('userId') userId: number,
+    @Param('email') email: string,
     @Body() adduserInfoDto: AddUserInfoDto,
   ): Promise<any> {
-    return this.usersService.addUserInfo({ userId, ...adduserInfoDto });
+    return this.usersService.addUserInfo({ email, ...adduserInfoDto });
   }
 
   //TODO 사용자 팔로잉 팔로우 API
+  @UseGuards(AuthGuard('access'))
+  @Post('/:follow_nickname/follow')
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: '팔로우 추가' })
+  @ApiResponse({ status: 201, description: '팔로우 성공!' })
+  @ApiResponse({
+    status: 404,
+    description: '팔로잉할 사람을 찾을 수 없습니다!',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '로그인한 사용자의 정보를 찾을 수 없습니다.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '자기 자신을 팔로우 할 수 없습니다!',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '이미 팔로우되어 있는 상대입니다!',
+  })
+  @ApiResponse({
+    status: 501,
+    description: '잘못된 요청입니다.',
+  })
+  async addFollow(
+    @Param('follow_nickname') followNickname: string,
+    @CurrentUser() user,
+  ): Promise<object> {
+    const userId = user.id; //로그인한 유저_id
+    const followInfo: AddFollowDto = { followNickname, userId };
+    return this.usersService.addFollow(followInfo);
+  }
+
+  //TODO 사용자 정보 얻기
+
+  @Get('/:user_nickname/userprofile')
+  @UseGuards(AuthGuard('access'))
+  @ApiParam({
+    name: 'user_nickname',
+    description: '닉네임',
+    type: 'string',
+    example: 'test',
+  })
+  @ApiResponse({
+    status: 501,
+    description: '잘못된 요청입니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '사용자 정보를 찾았습니다!',
+    type: UserResponseDto,
+  })
+  async getUserProfile(@Param('user_nickname') userNickname: string) {
+    return this.usersService.getUserProfile(userNickname);
+  }
+
 
   //TODO 사용자 검색 API
 
