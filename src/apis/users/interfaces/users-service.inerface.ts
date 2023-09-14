@@ -7,11 +7,16 @@ export interface IUsersServiceCheckEmail {
 }
 
 export interface IUsersServiceUserInfo {
-  userId?: number;
+  email?: string;
   nickname: string;
   age: number;
   sex: string;
   user_image?: string;
   phone_number: string;
   name: string;
+}
+
+export interface IUsersServiceAddFollow {
+  userId: number;
+  followNickname: string;
 }

@@ -49,8 +49,8 @@ export class AuthService {
     await queryRunner.startTransaction();
 
     try {
-      //이미 있는 메일인지 확인
-      let isExist = await this.usersRepository.findOne({
+      //임시 메일
+      let isExist = await queryRunner.manager.findOne(User, {
         where: { email, is_tmp: true },
       });
 
@@ -100,8 +100,11 @@ export class AuthService {
       await queryRunner.commitTransaction();
       await transporter.sendMail(mailOptions);
       return { statusCode: 201, message: '이메일 전송에 성공하였습니다.' };
-    } catch (error) {
+    } catch (err) {
       await queryRunner.rollbackTransaction();
+      if (!(err instanceof NotImplementedException)) {
+        throw err;
+      }
       throw new NotImplementedException('잘못된 요청입니다');
     } finally {
       await queryRunner.release();
@@ -146,8 +149,11 @@ export class AuthService {
       await queryRunner.manager.remove(tokenVerify);
       await queryRunner.commitTransaction();
       return { statusCode: 201, message: '이메일 인증에 성공하였습니다.' };
-    } catch (error) {
+    } catch (err) {
       await queryRunner.rollbackTransaction();
+      if (!(err instanceof NotImplementedException)) {
+        throw err;
+      }
       throw new NotImplementedException('잘못된 요청입니다.');
     } finally {
       await queryRunner.release();
@@ -183,7 +189,10 @@ export class AuthService {
         accessToken: `Bearer ${accessToken}`,
         refreshToken: refreshToken,
       };
-    } catch (error) {
+    } catch (err) {
+      if (!(err instanceof NotImplementedException)) {
+        throw err;
+      }
       throw new NotImplementedException('잘못된 요청입니다.');
     }
   }
@@ -205,7 +214,7 @@ export class AuthService {
     );
   }
 
-  //!Oauth로그인 서비스
+  //!Oauth로그인 서비스 (마지막)
   // async oauthLogin({ user }: IContext) {
   //   //oauth 유저가 있지만, userProfile이 없다면, 로그인요청 하고, 가입
   //   //리턴으로 리다이렉션
@@ -223,7 +232,10 @@ export class AuthService {
       if (!isBlacklisted) {
         throw new UnauthorizedException('로그아웃 되지 않았습니다!');
       }
-    } catch (error) {
+    } catch (err) {
+      if (!(err instanceof NotImplementedException)) {
+        throw err;
+      }
       throw new NotImplementedException('잘못된 요청입니다.');
     }
   }
@@ -233,7 +245,10 @@ export class AuthService {
     try {
       const expiresIn: number = 60 * 60 * 24 * 14;
       await this.cacheManager.set(refreshToken, true, expiresIn); //2주
-    } catch (error) {
+    } catch (err) {
+      if (!(err instanceof NotImplementedException)) {
+        throw err;
+      }
       throw new NotImplementedException('잘못된 요청입니다!');
     }
   }
@@ -243,7 +258,10 @@ export class AuthService {
     try {
       const result = await this.cacheManager.get(refreshToken);
       return !!result;
-    } catch (error) {
+    } catch (err) {
+      if (!(err instanceof NotImplementedException)) {
+        throw err;
+      }
       throw new NotImplementedException('잘못된 요청입니다.');
     }
   }

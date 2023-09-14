@@ -18,9 +18,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let responseData;
 
     if (typeof errorResponse === 'object') {
-      responseData = { ...errorResponse, statusCode: status };
+      responseData = { ...errorResponse, statusCode: status, success: false };
     } else {
-      responseData = { message: errorResponse, statusCode: status };
+      responseData = {
+        message: errorResponse,
+        statusCode: status,
+        success: false,
+      };
     }
 
     response.status(status).json({

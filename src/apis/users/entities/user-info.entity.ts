@@ -13,7 +13,7 @@ import { User } from './user.entity';
 @Entity()
 export class UserInfo {
   @PrimaryGeneratedColumn()
-  userprofile_id: number;
+  id: number;
 
   @Column({ unique: true })
   @IsNotEmpty()
