@@ -1,5 +1,8 @@
+import { Sex } from '../entities/user-info.entity';
+
 export interface IUsersServiceCreate {
   password: string;
+  second_password: string;
   email: string;
 }
 export interface IUsersServiceCheckEmail {
@@ -10,7 +13,7 @@ export interface IUsersServiceUserInfo {
   email?: string;
   nickname: string;
   age: number;
-  sex: string;
+  sex: Sex;
   user_image?: string;
   phone_number: string;
   name: string;

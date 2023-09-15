@@ -1,4 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
+import { Board } from 'src/apis/boards/entities/board.entity';
 import {
   Column,
   Entity,
@@ -9,6 +10,11 @@ import {
 } from 'typeorm';
 import { Follow } from './follow.entity';
 import { User } from './user.entity';
+
+export enum Sex {
+  MAN = '남자',
+  WOMAN = '여자',
+}
 
 @Entity()
 export class UserInfo {
@@ -25,8 +31,8 @@ export class UserInfo {
   @Column()
   age: number;
 
-  @Column()
-  sex: string;
+  @Column({ type: 'enum', enum: Sex, default: Sex.MAN })
+  sex: Sex;
 
   @Column()
   phone_number: string;
@@ -46,4 +52,7 @@ export class UserInfo {
 
   @OneToMany(() => Follow, (follow) => follow.following)
   followers: Follow[];
+
+  @OneToMany(() => Board, (board) => board.userInfo)
+  boards: Board[];
 }

@@ -7,6 +7,7 @@ import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { RedisClientOptions } from 'redis';
+import { BoardsModule } from './apis/boards/boards.module';
 
 @Module({
   imports: [
@@ -25,12 +26,12 @@ import { RedisClientOptions } from 'redis';
     CacheModule.register<RedisClientOptions>({
       store: redisStore,
       url: `redis://${process.env.REDIS_HOST}:6379`, //localhost용
-      // url : "redis://redis:6379" // docker용
       isGlobal: true,
       ttl: 60 * 60 * 24 * 14, // 전역 ttl 기본 설정
     }),
     UsersModule,
     AuthModule,
+    BoardsModule,
   ],
   controllers: [],
   providers: [],

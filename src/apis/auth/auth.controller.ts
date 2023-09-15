@@ -40,7 +40,7 @@ export class AuthController {
     description: '이미 등록된 메일입니다!',
   })
   @ApiResponse({
-    status: 501,
+    status: 400,
     description: '잘못된 요청입니다.',
   })
   @ApiOperation({ summary: '이메일 인증코드 전송' })
@@ -60,7 +60,7 @@ export class AuthController {
     description: '이메일 인증에 성공하였습니다.',
   })
   @ApiResponse({
-    status: 400,
+    status: 401,
     description: '토큰 만료시간이 지났습니다.',
   })
   @ApiResponse({
@@ -72,7 +72,7 @@ export class AuthController {
     description: '유저가 맞지 않습니다.',
   })
   @ApiResponse({
-    status: 501,
+    status: 400,
     description: '잘못된 요청입니다.',
   })
   @ApiBody({
@@ -106,7 +106,7 @@ export class AuthController {
     description: '사용자가 없습니다!',
   })
   @ApiResponse({
-    status: 501,
+    status: 400,
     description: '잘못된 요청입니다.',
   })
   @Post('login')
@@ -146,7 +146,7 @@ export class AuthController {
     description: '로그아웃 되지 않았습니다!',
   })
   @ApiResponse({
-    status: 501,
+    status: 400,
     description: '잘못된 요청입니다!',
   })
   @ApiHeader({

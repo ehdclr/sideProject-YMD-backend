@@ -1,8 +1,8 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
-  NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -45,7 +45,11 @@ export class UsersService {
     await queryRunner.startTransaction();
 
     try {
-      const { password, email } = SignupUserDto;
+      const { password, second_password, email } = SignupUserDto;
+
+      if (password != second_password) {
+        throw new UnauthorizedException('비밀번호가 일치하지 않습니다!');
+      }
 
       const user = await queryRunner.manager.findOne(User, {
         where: { email: email, is_tmp: true },
@@ -70,10 +74,10 @@ export class UsersService {
       return { statusCode: 201, message: '회원가입 성공' };
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다');
+      throw new BadRequestException('잘못된 요청입니다');
     } finally {
       await queryRunner.release();
     }
@@ -132,17 +136,17 @@ export class UsersService {
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다');
+      throw new BadRequestException('잘못된 요청입니다');
     } finally {
       await queryRunner.release();
     }
   }
   //TODO 팔로우 팔로잉용 api
   async addFollow({
-    userId, //userInfo 엔티티가 아닌 User테이블의 엔티티임
+    userId,
     followNickname,
   }: IUsersServiceAddFollow): Promise<object> {
     const queryRunner = this.datasource.createQueryRunner();
@@ -159,7 +163,7 @@ export class UsersService {
       }
 
       const followerUserInfo = await queryRunner.manager.findOne(UserInfo, {
-        where: { userId },
+        where: { id: userId },
       });
 
       if (!followerUserInfo) {
@@ -193,10 +197,10 @@ export class UsersService {
       return { statusCode: 201, message: '팔로우 성공!' };
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다.');
+      throw new BadRequestException('잘못된 요청입니다.');
     } finally {
       await queryRunner.release();
     }
@@ -214,15 +218,15 @@ export class UsersService {
       }
 
       return {
-        statusCode: 201,
+        statusCode: 200,
         message: '사용자 정보를 찾았습니다!',
         user,
       };
     } catch (err) {
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다.');
+      throw new BadRequestException('잘못된 요청입니다.');
     }
   }
 
