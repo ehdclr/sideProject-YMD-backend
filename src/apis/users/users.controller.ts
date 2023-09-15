@@ -40,17 +40,6 @@ export class UsersController {
   @ApiResponse({ status: 201, description: '회원가입 성공' })
   @ApiResponse({ status: 401, description: '이메일 인증이 되지 않았습니다!' })
   @ApiResponse({ status: 501, description: '잘못된 요청입니다.' })
-  @ApiBody({
-    description: '회원가입',
-    schema: {
-      type: 'object',
-      properties: {
-        email: { type: 'string' },
-        password: { type: 'string' },
-        phone_number: { type: 'string' },
-      },
-    },
-  })
   async signUp(@Body() signupUserDto: SignupUserDto): Promise<object> {
     return this.usersService.create(signupUserDto);
   }
@@ -68,9 +57,10 @@ export class UsersController {
   @Post('/:email/userinfo')
   @ApiOperation({ summary: '사용자 추가정보' })
   @ApiResponse({ status: 201, description: '사용자 정보 등록 완료.' })
+  @ApiResponse({ status: 401, description: '비밀번호가 일치하지 않습니다!' })
   @ApiResponse({ status: 404, description: '사용자 아이디 값이 없습니다.' })
   @ApiResponse({ status: 409, description: '이미 등록된 닉네임입니다!' })
-  @ApiResponse({ status: 501, description: '잘못된 요청입니다.' })
+  @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
   async addUserInfo(
     @Param('email') email: string,
     @Body() adduserInfoDto: AddUserInfoDto,
@@ -101,14 +91,15 @@ export class UsersController {
     description: '이미 팔로우되어 있는 상대입니다!',
   })
   @ApiResponse({
-    status: 501,
+    status: 400,
     description: '잘못된 요청입니다.',
   })
   async addFollow(
     @Param('follow_nickname') followNickname: string,
     @CurrentUser() user,
   ): Promise<object> {
-    const userId = user.id; //로그인한 유저_id
+    const userId = user.user_info_id; //로그인한 유저_info_id
+
     const followInfo: AddFollowDto = { followNickname, userId };
     return this.usersService.addFollow(followInfo);
   }
@@ -124,18 +115,18 @@ export class UsersController {
     example: 'test',
   })
   @ApiResponse({
-    status: 501,
+    status: 400,
     description: '잘못된 요청입니다.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: '사용자 정보를 찾았습니다!',
     type: UserResponseDto,
   })
+  //메인화면에서 보이는 글
   async getUserProfile(@Param('user_nickname') userNickname: string) {
     return this.usersService.getUserProfile(userNickname);
   }
-
 
   //TODO 사용자 검색 API
 

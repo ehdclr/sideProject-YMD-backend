@@ -38,4 +38,5 @@ export class User {
 
   @OneToOne(() => UserInfo, (info) => info.user)
   user_info: UserInfo;
+
 }

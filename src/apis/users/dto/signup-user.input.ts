@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNumber, IsString, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
+import { Sex } from '../entities/user-info.entity';
 
 export class SignupUserDto {
   @ApiProperty({
@@ -11,7 +20,22 @@ export class SignupUserDto {
     message:
       '최소 8자 및 최대 20자 하나의 소문자, 하나의 숫자 및 하나의 특수문자가 필요합니다.',
   })
+  @IsString()
+  @IsNotEmpty()
   password: string;
+
+  @ApiProperty({
+    example: 'qweR1234!',
+    description: '비밀번호 재확인',
+    required: true,
+  })
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d~!@#$%^&*()+|=]{8,16}$/, {
+    message:
+      '최소 8자 및 최대 20자 하나의 소문자, 하나의 숫자 및 하나의 특수문자가 필요합니다.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  second_password: string;
 
   @ApiProperty({
     example: 'test@test.com',
@@ -19,6 +43,7 @@ export class SignupUserDto {
     required: true,
   })
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 }
 
@@ -33,17 +58,21 @@ export class AddUserInfoDto {
 
   @ApiProperty({ description: '닉네임', example: 'test', required: true })
   @IsString()
+  @IsNotEmpty()
   nickname: string;
 
   @ApiProperty({ description: '나이', example: '17' })
   @IsNumber()
+  @IsNotEmpty()
   age: number;
 
-  @ApiProperty({ description: '성별', example: '남자' })
-  @IsString()
-  sex: string;
+  @ApiProperty({ description: '성별', example: '남자/여자' })
+  @IsEnum(Sex)
+  sex: Sex;
 
   @ApiProperty({ description: '프로필 이미지', example: 'url' })
+  @IsString()
+  @IsOptional()
   user_image?: string;
 
   @ApiProperty({ description: '전화번호', example: '010-0000-0000' })
@@ -52,6 +81,7 @@ export class AddUserInfoDto {
 
   @ApiProperty({ description: '이름', example: '이현종' })
   @IsString()
+  @IsNotEmpty()
   name: string;
 }
 

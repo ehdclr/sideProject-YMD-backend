@@ -11,7 +11,6 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
@@ -102,10 +101,10 @@ export class AuthService {
       return { statusCode: 201, message: '이메일 전송에 성공하였습니다.' };
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다');
+      throw new BadRequestException('잘못된 요청입니다');
     } finally {
       await queryRunner.release();
     }
@@ -129,7 +128,7 @@ export class AuthService {
       if (tokenVerify.expiresAt < new Date()) {
         //만료기간이 지난 토큰 제거(입력 시에만 삭제됨)
         await queryRunner.manager.delete(Token, { token: token });
-        throw new BadRequestException('토큰 만료시간이 지났습니다.');
+        throw new UnauthorizedException('토큰 만료시간이 지났습니다.');
       }
 
       const user = await queryRunner.manager.findOne(User, {
@@ -151,10 +150,10 @@ export class AuthService {
       return { statusCode: 201, message: '이메일 인증에 성공하였습니다.' };
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다.');
+      throw new BadRequestException('잘못된 요청입니다.');
     } finally {
       await queryRunner.release();
     }
@@ -166,7 +165,10 @@ export class AuthService {
   async login({ email, password }: IAuthServiceLogin): Promise<LoginResponse> {
     try {
       //로그인 유저 아이디
-      const user = await this.usersRepository.findOne({ where: { email } });
+      const user = await this.usersRepository.findOne({
+        where: { email },
+        relations: ['user_info'],
+      });
       if (!user) {
         throw new NotFoundException('사용자가 없습니다!');
       }
@@ -190,10 +192,10 @@ export class AuthService {
         refreshToken: refreshToken,
       };
     } catch (err) {
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다.');
+      throw new BadRequestException('잘못된 요청입니다.');
     }
   }
 
@@ -202,6 +204,7 @@ export class AuthService {
       {
         sub: user.user_id,
         email: user.email,
+        user_info_id: user.user_info.id,
       },
       { secret: process.env.JWT_ACCESS_TOKEN_KEY, expiresIn: '10m' },
     );
@@ -233,10 +236,10 @@ export class AuthService {
         throw new UnauthorizedException('로그아웃 되지 않았습니다!');
       }
     } catch (err) {
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다.');
+      throw new BadRequestException('잘못된 요청입니다.');
     }
   }
 
@@ -246,10 +249,10 @@ export class AuthService {
       const expiresIn: number = 60 * 60 * 24 * 14;
       await this.cacheManager.set(refreshToken, true, expiresIn); //2주
     } catch (err) {
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다!');
+      throw new BadRequestException('잘못된 요청입니다!');
     }
   }
 
@@ -259,10 +262,10 @@ export class AuthService {
       const result = await this.cacheManager.get(refreshToken);
       return !!result;
     } catch (err) {
-      if (!(err instanceof NotImplementedException)) {
+      if (!(err instanceof BadRequestException)) {
         throw err;
       }
-      throw new NotImplementedException('잘못된 요청입니다.');
+      throw new BadRequestException('잘못된 요청입니다.');
     }
   }
 }
