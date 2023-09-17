@@ -14,7 +14,6 @@ import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
   ApiOperation,
-  ApiProperty,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -27,6 +26,7 @@ import {
   BoardsListResponseDto,
 } from './dto/boardList-response.dto';
 import { CreateBoardDto } from './dto/create-board.input';
+import { UpdateBoardDto } from './dto/update-board.input';
 
 @ApiTags('Boards')
 @Controller('boards')
@@ -56,6 +56,7 @@ export class BoardsController {
   @UseGuards(AuthGuard('access'))
   @Get('/')
   @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: '모든 게시물 가져오기' })
   @ApiResponse({
     status: 200,
     description: '모든 게시물 가져오기',
@@ -71,6 +72,7 @@ export class BoardsController {
   @UseGuards(AuthGuard('access'))
   @Get('/:board_id')
   @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: '선택한 게시물 가져오기' })
   @ApiResponse({
     status: 200,
     description: '선택한 게시물 가져오기',
@@ -91,9 +93,48 @@ export class BoardsController {
     return this.boardsService.getBoardDetail({ id, curUserId });
   }
 
-  //TODO 게시글 수정하기
-  //   @Patch()
+  // //TODO 게시글 수정하기
+  @UseGuards(AuthGuard('access'))
+  @Patch(':board_id')
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: '게시물 수정하기' })
+  @ApiResponse({ status: 401, description: '수정 권한이 없는 게시물입니다!' })
+  @ApiResponse({ status: 404, description: '수정하려는 게시물이 없습니다!' })
+  @ApiResponse({ status: 200, description: '게시물 수정 성공' })
+  async updateBoard(
+    @Param('board_id') boardId: number,
+    @CurrentUser() user,
+    @Body() updateBoard: UpdateBoardDto,
+  ): Promise<object> {
+    const curUserId = user.user_info_id;
+
+    return this.boardsService.updateBoard({
+      boardId,
+      ...updateBoard,
+      curUserId,
+    });
+  }
 
   //TODO 게시글 삭제하기
-  //   @Delete()
+  @UseGuards(AuthGuard('access'))
+  @Delete(':board_id')
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: '게시물 삭제하기' })
+  @ApiResponse({
+    status: 401,
+    description: '해당 게시물에 삭제 권한이 없는 계정입니다!',
+  })
+  @ApiResponse({ status: 404, description: '삭제하려는 게시물이 없습니다!' })
+  @ApiResponse({ status: 200, description: '게시물이 삭제 되었습니다.' })
+  async deleteBoard(
+    @Param('board_id') boardId: number,
+    @CurrentUser() user,
+  ): Promise<object> {
+    const curUserId = user.user_info_id;
+
+    return this.boardsService.deleteBoard({
+      boardId,
+      curUserId,
+    });
+  }
 }

@@ -26,15 +26,19 @@ export class UserInfo {
   nickname: string;
 
   @Column()
+  @IsNotEmpty()
   name: string;
 
   @Column()
+  @IsNotEmpty()
   age: number;
 
   @Column({ type: 'enum', enum: Sex, default: Sex.MAN })
+  @IsNotEmpty()
   sex: Sex;
 
   @Column()
+  @IsNotEmpty()
   phone_number: string;
 
   @Column({ nullable: true })
@@ -45,6 +49,7 @@ export class UserInfo {
   user: User;
 
   @Column()
+  @IsNotEmpty()
   userId: number;
 
   @OneToMany(() => Follow, (follow) => follow.follower)

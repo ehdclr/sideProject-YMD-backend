@@ -1,4 +1,4 @@
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import {
   Injectable,
   NotFoundException,
@@ -9,15 +9,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfo } from '../users/entities/user-info.entity';
 import runInTransaction from 'src/commons/utils/transaction.utils';
 import { Follow } from '../users/entities/follow.entity';
-import { IBoardsServiceGetBoardDetail } from './interfaces/board-service.interface';
-
-interface IBoardsServiceCreateBoard {
-  user_info_id: number;
-  title: string;
-  contents: string;
-  board_image?: string;
-  is_private: PrivacyLevel;
-}
+import {
+  IBoardsServiceCreateBoard,
+  IBoardsServiceDeleteBoard,
+  IBoardsServiceGetBoardDetail,
+  IBoardsServiceUpdateBoard,
+} from './interfaces/board-service.interface';
 
 @Injectable()
 export class BoardsService {
@@ -87,10 +84,8 @@ export class BoardsService {
         where: [{ followerId: curUserId }, { followingId: curUserId }],
       });
 
-      //맞팔인 사용자 id 값(본인 빼고)
-      const mutualUserIds = mutualFollows
-        .map((follow) => follow.followingId)
-        .filter((id) => id !== curUserId);
+      //맞팔인 사용자 id 값
+      const mutualUserIds = mutualFollows.map((follow) => follow.followingId);
 
       const friendsBoards = await manager.find(Board, {
         where: {
@@ -115,13 +110,12 @@ export class BoardsService {
           };
         }),
       );
-      const result = boardsList
-        .sort((a, b) => {
-          if (a.date > b.date) return -1;
-          else if (a.date < b.date) return 1;
-          else return 0;
-        })
-        .filter((el) => el.user_info_id !== curUserId);
+      const result = boardsList.sort((a, b) => {
+        if (a.date > b.date) return -1;
+        else if (a.date < b.date) return 1;
+        else return 0;
+      });
+      // .filter((el) => el.user_info_id !== curUserId); //본인 게시물 빼고
 
       //TODO 좋아요수 , 댓글 수 가져와야함
 
@@ -192,6 +186,76 @@ export class BoardsService {
     });
   }
 
-  //TODO 맞팔이 아닌 상대를 눌렀을 때, 맞팔이 아니면, 상대 모두 공개 글만 보이고,
-  //TODO 비공개 글은 보이지 않아야함
+  //TODO 게시글 수정하기
+  async updateBoard(updateBoard: IBoardsServiceUpdateBoard): Promise<object> {
+    const {
+      boardId,
+      curUserId,
+      update_title,
+      update_contents,
+      update_board_image,
+      update_is_private,
+    } = updateBoard;
+
+    return runInTransaction(this.dataSource, async (manager) => {
+      try {
+        const updateTarget = await manager.findOne(Board, {
+          where: { id: boardId },
+        });
+
+        if (!updateTarget) {
+          throw new NotFoundException('수정하려는 게시물이 없습니다!');
+        }
+
+        if (curUserId !== updateTarget.user_info_id) {
+          throw new UnauthorizedException('수정 권한이 없는 게시물입니다!');
+        }
+
+        await manager.update(
+          Board,
+          { id: boardId },
+          {
+            ...updateTarget,
+            title: update_title,
+            contents: update_contents,
+            board_image: update_board_image,
+            is_private: update_is_private,
+          },
+        );
+      } catch (err) {
+        throw err;
+      }
+
+      return { statusCode: 200, message: '게시물 수정 성공' };
+    });
+  }
+
+  //TODO 게시물 삭제하기
+  async deleteBoard(deleteBoard: IBoardsServiceDeleteBoard): Promise<object> {
+    const { boardId, curUserId } = deleteBoard;
+
+    return runInTransaction(this.dataSource, async (manager) => {
+      try {
+        const targetBoard = await manager.findOne(Board, {
+          where: { id: boardId },
+        });
+
+        if (!targetBoard) {
+          throw new NotFoundException('삭제하려는 게시물이 없습니다!');
+        }
+
+        if (curUserId !== targetBoard.user_info_id) {
+          throw new UnauthorizedException(
+            '해당 게시물에 삭제 권한이 없는 계정입니다!',
+          );
+        }
+
+        await manager.delete(Board, { id: boardId });
+      } catch (err) {
+        throw err;
+      }
+
+      return { statusCode: 200, message: '게시물이 삭제 되었습니다!' };
+    });
+  }
 }
