@@ -23,3 +23,8 @@ export interface IUsersServiceAddFollow {
   userId: number;
   followNickname: string;
 }
+
+export interface IUsersServiceUnFollow {
+  userId: number;
+  followNickname: string;
+}

@@ -2,6 +2,7 @@ import { HttpExceptionFilter } from '../../commons/filters/http-exception.filter
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -13,11 +14,11 @@ import {
   AddFollowDto,
   AddUserInfoDto,
   SignupUserDto,
+  unFollowDto,
 } from './dto/signup-user.input';
 import { UsersService } from './users.service';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -58,6 +59,11 @@ export class UsersController {
   @ApiOperation({ summary: '사용자 추가정보' })
   @ApiResponse({ status: 201, description: '사용자 정보 등록 완료.' })
   @ApiResponse({ status: 401, description: '비밀번호가 일치하지 않습니다!' })
+  @ApiResponse({ status: 400, description: '사용자 정보를 모두 입력해주세요!' })
+  @ApiResponse({
+    status: 404,
+    description: '해당 이메일을 가진 사용자를 찾을 수 없습니다!',
+  })
   @ApiResponse({ status: 404, description: '사용자 아이디 값이 없습니다.' })
   @ApiResponse({ status: 409, description: '이미 등록된 닉네임입니다!' })
   @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
@@ -87,7 +93,7 @@ export class UsersController {
     description: '자기 자신을 팔로우 할 수 없습니다!',
   })
   @ApiResponse({
-    status: 401,
+    status: 409,
     description: '이미 팔로우되어 있는 상대입니다!',
   })
   @ApiResponse({
@@ -102,6 +108,34 @@ export class UsersController {
 
     const followInfo: AddFollowDto = { followNickname, userId };
     return this.usersService.addFollow(followInfo);
+  }
+
+  //TODO 팔로우 취소 API
+  @UseGuards(AuthGuard('access'))
+  @Delete('/:follow_nickname/follow')
+  @ApiOperation({ summary: '언팔로우 ' })
+  @ApiResponse({ status: 200, description: '언팔로우 했습니다!' })
+  @ApiResponse({ status: 404, description: '팔로우 대상을 찾을 수 없습니다!' })
+  @ApiResponse({
+    status: 401,
+    description: '본인을 언팔로우 할 수 없습니다!',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '이미 팔로우 되어있지 않는 상대입니다.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청입니다.',
+  })
+  async unFollow(
+    @Param('follow_nickname') followNickname: string,
+    @CurrentUser() user,
+  ): Promise<object> {
+    const userId = user.user_info_id;
+    const followInfo: unFollowDto = { followNickname, userId };
+
+    return this.usersService.unFollow(followInfo);
   }
 
   //TODO 사용자 정보 얻기

@@ -1,3 +1,4 @@
+import runInTransaction from 'src/commons/utils/transaction.utils';
 import {
   IAuthServiceLogin,
   IAuthServiceLogoutRefresh,
@@ -13,7 +14,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+
 import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Token } from './entities/token.entity';
@@ -24,6 +25,7 @@ import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { UserInfo } from '../users/entities/user-info.entity';
+import sendEmail from 'src/commons/utils/email.utils';
 
 @Injectable()
 export class AuthService {
@@ -43,120 +45,96 @@ export class AuthService {
   async sendVerificationEmail({
     email,
   }: IAUthServiceSendEmail): Promise<object> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    return runInTransaction(this.dataSource, async (manager) => {
+      try {
+        //임시 메일
+        let isExist = await manager.findOne(User, {
+          where: { email, is_tmp: true },
+        });
 
-    try {
-      //임시 메일
-      let isExist = await queryRunner.manager.findOne(User, {
-        where: { email, is_tmp: true },
-      });
+        const emailVerifyUser = await manager.findOne(User, {
+          where: { email, is_tmp: false, is_verified_email: true },
+        });
 
-      const emailVerifyUser = await queryRunner.manager.findOne(User, {
-        where: { email, is_tmp: false, is_verified_email: true },
-      });
+        if (emailVerifyUser) {
+          throw new ConflictException('이미 등록된 메일입니다!');
+        }
 
-      if (emailVerifyUser) {
-        throw new ConflictException('이미 등록된 메일입니다!');
-      }
+        const tokenValue = crypto.randomBytes(3).toString('hex');
 
-      const tokenValue = crypto.randomBytes(3).toString('hex');
+        //임시 아이디 없으면, 다시 재할당
+        if (!isExist) {
+          isExist = await manager.save(User, {
+            email,
+            is_tmp: true,
+          });
+        }
 
-      //임시 아이디 없으면, 다시 재할당
-      if (!isExist) {
-        isExist = await queryRunner.manager.save(User, { email, is_tmp: true });
-      }
+        const token = new Token();
+        token.token = tokenValue;
+        token.type = 'email';
+        token.createdAt = new Date();
+        token.expiresAt = new Date(Date.now() + 1000 * 60 * 3); //3분 후 만료
 
-      const token = new Token();
-      token.token = tokenValue;
-      token.type = 'email';
-      token.createdAt = new Date();
-      token.expiresAt = new Date(Date.now() + 1000 * 60 * 3); //3분 후 만료
+        token.user = isExist;
 
-      token.user = isExist;
+        await manager.save(token);
+        await sendEmail(
+          email,
+          '이메일 인증입니다.',
+          `<h1>이메일 코드입니다.</h1>
+        <br>
+        <p>이메일 인증을 원하시면 코드를 입력해주세요.</p>
+        <h3>${tokenValue}</h3>
 
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: `${process.env.ADMIN_EMAIL}`,
-          pass: `${process.env.ADMIN_EMAIL_PASS}`,
-        },
-      });
-
-      const mailOptions = {
-        to: email,
-        subject: '이메일 인증입니다.',
-        html: `<h1>이메일 코드입니다.</h1>
-                <br>
-                <p>이메일 인증을 원하시면 코드를 입력해주세요.</p>
-                <h3>${tokenValue}</h3>
-        
-        `,
-      };
-
-      await queryRunner.manager.save(token);
-      await queryRunner.commitTransaction();
-      await transporter.sendMail(mailOptions);
-      return { statusCode: 201, message: '이메일 전송에 성공하였습니다.' };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      if (!(err instanceof BadRequestException)) {
+`,
+        );
+      } catch (err) {
         throw err;
       }
-      throw new BadRequestException('잘못된 요청입니다');
-    } finally {
-      await queryRunner.release();
-    }
+
+      return { statusCode: 200, message: '이메일 전송에 성공하였습니다.' };
+    });
   }
 
   async verifyEmail(token: string): Promise<object> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    return runInTransaction(this.dataSource, async (manager) => {
+      try {
+        const tokenVerify = await manager.findOne(Token, {
+          where: { token: token },
+          relations: ['user'],
+        });
 
-    try {
-      const tokenVerify = await queryRunner.manager.findOne(Token, {
-        where: { token: token },
-        relations: ['user'],
-      });
+        if (!tokenVerify) {
+          throw new NotFoundException('토큰이 존재하지 않습니다.');
+        }
 
-      if (!tokenVerify) {
-        throw new NotFoundException('토큰이 존재하지 않습니다.');
-      }
+        if (tokenVerify.expiresAt < new Date()) {
+          //만료기간이 지난 토큰 제거(입력 시에만 삭제됨)
+          await manager.delete(Token, { token: token });
+          throw new UnauthorizedException('토큰 만료시간이 지났습니다.');
+        }
 
-      if (tokenVerify.expiresAt < new Date()) {
-        //만료기간이 지난 토큰 제거(입력 시에만 삭제됨)
-        await queryRunner.manager.delete(Token, { token: token });
-        throw new UnauthorizedException('토큰 만료시간이 지났습니다.');
-      }
+        const user = await manager.findOne(User, {
+          where: {
+            email: tokenVerify.user.email,
+          },
+        });
 
-      const user = await queryRunner.manager.findOne(User, {
-        where: {
-          email: tokenVerify.user.email,
-        },
-      });
+        if (!user) {
+          throw new NotFoundException('유저가 맞지 않습니다.');
+        }
 
-      if (!user) {
-        throw new NotFoundException('유저가 맞지 않습니다.');
-      }
+        user.is_verified_email = true;
+        await manager.save(user);
 
-      user.is_verified_email = true;
-      await queryRunner.manager.save(user);
-
-      //사용한 토큰은 삭제
-      await queryRunner.manager.remove(tokenVerify);
-      await queryRunner.commitTransaction();
-      return { statusCode: 201, message: '이메일 인증에 성공하였습니다.' };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      if (!(err instanceof BadRequestException)) {
+        //사용한 토큰은 삭제
+        await manager.remove(tokenVerify);
+      } catch (err) {
         throw err;
       }
-      throw new BadRequestException('잘못된 요청입니다.');
-    } finally {
-      await queryRunner.release();
-    }
+      return { statusCode: 201, message: '이메일 인증에 성공하였습니다.' };
+    });
   }
 
   //TODO 휴대폰 인증 로직
@@ -169,7 +147,7 @@ export class AuthService {
         where: { email },
         relations: ['user_info'],
       });
-      if (!user) {
+      if (!user || !user.user_info) {
         throw new NotFoundException('사용자가 없습니다!');
       }
 

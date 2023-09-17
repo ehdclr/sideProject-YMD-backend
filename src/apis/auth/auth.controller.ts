@@ -56,7 +56,7 @@ export class AuthController {
 
   //이메일 인증 로직
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: '이메일 인증에 성공하였습니다.',
   })
   @ApiResponse({

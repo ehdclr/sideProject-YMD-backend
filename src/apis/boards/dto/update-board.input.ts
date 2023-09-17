@@ -1,25 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { PrivacyLevel } from '../entities/board.entity';
 
-export class CreateBoardDto {
+export class UpdateBoardDto {
   @ApiProperty({
     example: '제목',
-    description: '제목',
-    required: true,
+    description: '수정할 제목',
   })
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  @IsOptional()
+  update_title?: string;
 
   @ApiProperty({
     example: '내용',
-    description: '내용',
-    required: true,
+    description: '수정할 내용',
   })
   @IsString()
-  @IsNotEmpty()
-  contents: string;
+  @IsOptional()
+  update_contents?: string;
 
   @ApiProperty({
     example: '이미지url',
@@ -27,13 +25,13 @@ export class CreateBoardDto {
   })
   @IsString()
   @IsOptional()
-  board_image?: string;
+  update_board_image?: string;
 
   @ApiProperty({
     example: '모두 공개/비공개/친구에게만 공개',
-    description: '공개여부',
-    required: true,
+    description: '공개여부 수정',
   })
   @IsEnum(PrivacyLevel)
-  is_private: PrivacyLevel;
+  @IsOptional()
+  update_is_private: PrivacyLevel;
 }
