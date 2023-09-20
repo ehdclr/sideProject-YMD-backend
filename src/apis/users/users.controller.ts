@@ -121,7 +121,7 @@ export class UsersController {
     description: '본인을 언팔로우 할 수 없습니다!',
   })
   @ApiResponse({
-    status: 404,
+    status: 401,
     description: '이미 팔로우 되어있지 않는 상대입니다.',
   })
   @ApiResponse({

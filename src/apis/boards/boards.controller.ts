@@ -41,6 +41,10 @@ export class BoardsController {
   @ApiBearerAuth('accessToken')
   @ApiOperation({ summary: '게시물 생성하기' })
   @ApiResponse({ status: 201, description: '게시물 등록에 성공했습니다!' })
+  @ApiResponse({
+    status: 401,
+    description: '제목 혹은 내용 공개여부를 입력해주세요!',
+  })
   @ApiResponse({ status: 404, description: '사용자 정보가 없습니다!' })
   @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
   async createBoard(

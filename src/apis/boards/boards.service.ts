@@ -32,6 +32,12 @@ export class BoardsService {
     return runInTransaction(this.dataSource, async (manager) => {
       const { user_info_id, title, contents, board_image, is_private } =
         createBoard;
+      if (!title || !contents || !is_private) {
+        throw new UnauthorizedException(
+          '제목 혹은 내용 공개여부를 입력해주세요!',
+        );
+      }
+
       const userInfo = await manager.findOne(UserInfo, {
         where: { id: user_info_id },
       });
@@ -78,7 +84,7 @@ export class BoardsService {
         }),
       );
 
-      //맞팔해야지만 계정이
+      // 팔로우한 계정 정보 찾기
 
       const mutualFollows = await manager.find(Follow, {
         where: [{ followerId: curUserId }, { followingId: curUserId }],

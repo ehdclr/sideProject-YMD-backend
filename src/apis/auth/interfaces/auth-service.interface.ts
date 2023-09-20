@@ -14,7 +14,9 @@ export interface IAuthServiceLogin {
 }
 
 export interface IAuthServiceUser {
-  user: User;
+  user_id: number;
+  email: string;
+  user_info_id: number;
 }
 
 export interface LoginResponse {
@@ -26,4 +28,9 @@ export interface LoginResponse {
 
 export interface IAuthServiceLogoutRefresh {
   refreshToken: string;
+}
+
+export interface IAuthServiceOauthLogin {
+  provider: string;
+  email: string;
 }

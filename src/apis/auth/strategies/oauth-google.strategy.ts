@@ -1,32 +1,25 @@
-// import { validate } from 'class-validator';
-// import { Strategy } from 'passport-jwt';
-// import { PassportStrategy } from '@nestjs/passport';
+import { Strategy } from 'passport-google-oauth20';
+import { PassportStrategy } from '@nestjs/passport';
 
-// type OauthGooglePayload = {
-//   email: string;
-//   accessToken: string;
-//   refreshToken: string;
-//   provider_id: string;
-//   profile: any;
-// };
+export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  constructor() {
+    super({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: 'http://localhost:3000/auth/login/google', //사용하는 주소 end point
+      scope: ['email', 'profile'],
+    });
+  }
 
-// export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-//   constructor() {
-//     super({
-//       clientID: process.env.GOOGLE_CLIENT_ID,
-//       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-//       callbackURL: '', //사용하는 주소 end point
-//       scope: ['email', 'profile'],
-//     });
-//   }
-
-//   validate(payload: OauthGooglePayload) {
-//     const id = payload.profile.id;
-
-//     return {
-//       provider_id: id,
-//       email: payload.email,
-//       provider: 'google',
-//     };
-//   }
-// }
+  validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: (error: any, user: any) => void,
+  ) {
+    return {
+      email: profile.emails[0].value,
+      provider: 'google',
+    };
+  }
+}

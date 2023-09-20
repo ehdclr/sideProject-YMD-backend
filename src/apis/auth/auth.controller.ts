@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Post,
   Req,
   Res,
@@ -119,6 +120,9 @@ export class AuthController {
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 14 * 24 * 60 * 60 * 1000,
     });
 
     return res.json({
@@ -129,13 +133,26 @@ export class AuthController {
   }
 
   //TODO !Oauth로그인
-  // @UseGuards(AuthGuard('google'))
-  // @Post('oauthlogin')
-  // async oauthLogin(@Req() req): Promise<any> {
-  //   //
-  //   const user = req.user; //로그인된 사용자 정보 가져오기
-  //   this.authService.oauthLogin({ user });
-  // }
+  @UseGuards(AuthGuard('google'))
+  @Get('/login/google')
+  async oauthLogin(@Req() req, @Res() res): Promise<any> {
+    const user = req.user; //로그인된 사용자 정보 가져오기
+    const result = await this.authService.oauthLogin(user);
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json({
+      statusCode: result.statusCode,
+      message: result.message,
+      firstLogin: result.firstLogin,
+      accessToken: result.accessToken,
+    });
+  }
 
   @ApiResponse({
     status: 201,
@@ -155,7 +172,7 @@ export class AuthController {
   })
   @UseGuards(AuthGuard('access'))
   @Post('logout')
-  async logout(@Req() req: Request): Promise<object> {
+  async logout(@Req() req: Request, @Res() res): Promise<object> {
     const cookies = cookie.parse(req.headers.cookie || '');
     const refreshToken = cookies['refreshToken'];
 
@@ -165,6 +182,6 @@ export class AuthController {
 
     await this.authService.logout({ refreshToken });
 
-    return { StatusCode: 201, message: '로그아웃에 성공했습니다.' };
+    return res.json({ StatusCode: 201, message: '로그아웃에 성공했습니다.' });
   }
 }

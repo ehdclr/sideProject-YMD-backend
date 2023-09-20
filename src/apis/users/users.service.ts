@@ -208,7 +208,7 @@ export class UsersService {
         });
 
         if (!isCheckFollow) {
-          throw new NotFoundException('이미 팔로우 되어있지 않는 상대입니다.');
+          throw new UnauthorizedException('이미 팔로우 되어있지 않는 상대입니다.');
         }
 
         await manager.delete(Follow, {

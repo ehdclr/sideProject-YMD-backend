@@ -2,6 +2,7 @@ import runInTransaction from 'src/commons/utils/transaction.utils';
 import {
   IAuthServiceLogin,
   IAuthServiceLogoutRefresh,
+  IAuthServiceOauthLogin,
   IAUthServiceSendEmail,
   IAuthServiceUser,
   LoginResponse,
@@ -9,6 +10,8 @@ import {
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -159,9 +162,15 @@ export class AuthService {
         throw new UnauthorizedException('암호가 틀렸습니다!');
       }
 
-      const refreshToken = this.setRefreshToken({ user });
+      const userPayload: IAuthServiceUser = {
+        user_id: user.user_id,
+        email: user.email,
+        user_info_id: user.user_info.id,
+      };
 
-      const accessToken = this.getAccessToken({ user });
+      const refreshToken = this.setRefreshToken(userPayload.user_id);
+
+      const accessToken = this.getAccessToken(userPayload);
 
       return {
         statusCode: 201,
@@ -177,30 +186,74 @@ export class AuthService {
     }
   }
 
-  getAccessToken({ user }: IAuthServiceUser): string {
+  getAccessToken({ user_id, email, user_info_id }: IAuthServiceUser): string {
     return this.jwtService.sign(
       {
-        sub: user.user_id,
-        email: user.email,
-        user_info_id: user.user_info.id,
+        sub: user_id,
+        email: email,
+        user_info_id: user_info_id,
       },
       { secret: process.env.JWT_ACCESS_TOKEN_KEY, expiresIn: '10m' },
     );
   }
 
-  setRefreshToken({ user }: IAuthServiceUser): string {
+  setRefreshToken(user_id: number): string {
     return this.jwtService.sign(
-      { sub: user.user_id },
+      { sub: user_id },
       { secret: process.env.JWT_REFRESH_TOKEN_KEY, expiresIn: '2w' },
     );
   }
 
-  //!Oauth로그인 서비스 (마지막)
-  // async oauthLogin({ user }: IContext) {
-  //   //oauth 유저가 있지만, userProfile이 없다면, 로그인요청 하고, 가입
-  //   //리턴으로 리다이렉션
-  //   const oauthuser = await this.oauthUsersRepository.save();
-  // }
+
+  //TODO 트랜잭션 만들어줘야함
+  async oauthLogin(user: IAuthServiceOauthLogin) {
+    //oauth 유저가 있지만, userProfile이 없다면, 로그인요청 하고, 가입
+    const { email, provider } = user;
+    const oauthUser = await this.usersRepository.findOne({
+      where: { email: email },
+      relations: ['user_info'],
+    });
+    if (!oauthUser) {
+      const signupUser = this.usersRepository.create({
+        email: email,
+        is_verified_email: true,
+        provider: provider,
+      });
+
+      await this.usersRepository.save(signupUser);
+
+      return {
+        status: 201,
+        firstLogin: true,
+        message: 'Oauth 첫 로그인 입니다.',
+      };
+    }
+    // if (!oauthUser.user_info.id) {
+    //   throw new HttpException(
+    //     {
+    //       statusCode: HttpStatus.UNAUTHORIZED,
+    //       message: '추가 회원가입을 진행해주세요',
+    //       firstLogin: false,
+    //     },
+    //     HttpStatus.UNAUTHORIZED,
+    //   );
+    // }
+    const userPayload = {
+      user_id: oauthUser.user_id,
+      email: oauthUser.email,
+      user_info_id: oauthUser.user_info.id,
+    };
+    //리턴으로 리다이렉션
+    const accessToken = this.getAccessToken(userPayload);
+    const refreshToken = this.setRefreshToken(userPayload.user_info_id);
+    return {
+      statusCode: 200,
+      message: '로그인에 성공 하였습니다.',
+      firstLogin: false,
+      accessToken: `Bearer ${accessToken}`,
+      refreshToken: refreshToken,
+    };
+  }
 
   //로그아웃 로직
   async logout({ refreshToken }: IAuthServiceLogoutRefresh) {

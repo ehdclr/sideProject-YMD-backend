@@ -27,9 +27,6 @@ export class User {
   @Column({ default: false })
   is_verified_email: boolean;
 
-  @Column({ default: false })
-  is_verified_phone: boolean;
-
   @Column({ default: 'local', nullable: false })
   provider: string;
 

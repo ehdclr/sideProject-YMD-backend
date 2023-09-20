@@ -10,6 +10,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { UserInfo } from '../users/entities/user-info.entity';
 // import { GoogleStrategy } from './strategies/oauth-google.strategy';
 import { PassportModule } from '@nestjs/passport';
+import { GoogleStrategy } from './strategies/oauth-google.strategy';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { PassportModule } from '@nestjs/passport';
     AuthService,
     JwtAccessStrategy,
     JwtRefreshStrategy,
-    // GoogleStrategy,
+    GoogleStrategy,
   ],
   // exports: [PassportModule, AuthService],
 })
