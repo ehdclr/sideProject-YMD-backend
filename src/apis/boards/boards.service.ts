@@ -7,7 +7,7 @@ import {
 import { Board, PrivacyLevel } from './entities/board.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfo } from '../users/entities/user-info.entity';
-import runInTransaction from 'src/commons/utils/transaction.utils';
+import runInTransaction from 'src/commons/utils/transaction.util';
 import { Follow } from '../users/entities/follow.entity';
 import {
   IBoardsServiceCreateBoard,
@@ -58,7 +58,7 @@ export class BoardsService {
 
   //모든 게시글 볼때 (메인화면, 맞팔인 친구 글도 보여야함)
   //맞팔 상태가 아니면 공개글만 보임
-  async getBoards(curUserId: number): Promise<object> {
+  async getBoards(curUserId: string): Promise<object> {
     return runInTransaction(this.dataSource, async (manager) => {
       const boardsList = [];
 

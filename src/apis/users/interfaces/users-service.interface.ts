@@ -20,11 +20,11 @@ export interface IUsersServiceUserInfo {
 }
 
 export interface IUsersServiceAddFollow {
-  userId: number;
+  userId: string;
   followNickname: string;
 }
 
 export interface IUsersServiceUnFollow {
-  userId: number;
+  userId: string;
   followNickname: string;
 }

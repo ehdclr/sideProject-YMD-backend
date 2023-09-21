@@ -1,4 +1,4 @@
-import runInTransaction from 'src/commons/utils/transaction.utils';
+import runInTransaction from 'src/commons/utils/transaction.util';
 import {
   IAuthServiceLogin,
   IAuthServiceLogoutRefresh,
@@ -10,8 +10,6 @@ import {
 import {
   BadRequestException,
   ConflictException,
-  HttpException,
-  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -28,7 +26,7 @@ import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { UserInfo } from '../users/entities/user-info.entity';
-import sendEmail from 'src/commons/utils/email.utils';
+import sendEmail from 'src/commons/utils/email.util';
 
 @Injectable()
 export class AuthService {
@@ -163,7 +161,7 @@ export class AuthService {
       }
 
       const userPayload: IAuthServiceUser = {
-        user_id: user.user_id,
+        user_id: user.id,
         email: user.email,
         user_info_id: user.user_info.id,
       };
@@ -197,13 +195,12 @@ export class AuthService {
     );
   }
 
-  setRefreshToken(user_id: number): string {
+  setRefreshToken(user_id: string): string {
     return this.jwtService.sign(
       { sub: user_id },
       { secret: process.env.JWT_REFRESH_TOKEN_KEY, expiresIn: '2w' },
     );
   }
-
 
   //TODO 트랜잭션 만들어줘야함
   async oauthLogin(user: IAuthServiceOauthLogin) {
@@ -239,7 +236,7 @@ export class AuthService {
     //   );
     // }
     const userPayload = {
-      user_id: oauthUser.user_id,
+      user_id: oauthUser.id,
       email: oauthUser.email,
       user_info_id: oauthUser.user_info.id,
     };

@@ -9,8 +9,8 @@ import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class Token {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
   @Column({ length: 10, nullable: false })
   token: string;

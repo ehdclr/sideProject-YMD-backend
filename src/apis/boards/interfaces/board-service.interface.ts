@@ -1,12 +1,12 @@
 import { PrivacyLevel } from '../entities/board.entity';
 
 export interface IBoardsServiceGetBoardDetail {
-  id: number;
-  curUserId: number;
+  id: string;
+  curUserId: string;
 }
 
 export interface IBoardsServiceCreateBoard {
-  user_info_id: number;
+  user_info_id: string;
   title: string;
   contents: string;
   board_image?: string;
@@ -14,15 +14,15 @@ export interface IBoardsServiceCreateBoard {
 }
 
 export interface IBoardsServiceUpdateBoard {
-  boardId: number;
+  boardId: string;
   update_title?: string;
   update_contents?: string;
   update_board_image?: string;
   update_is_private?: PrivacyLevel;
-  curUserId: number;
+  curUserId: string;
 }
 
 export interface IBoardsServiceDeleteBoard {
-  boardId: number;
-  curUserId: number;
+  boardId: string;
+  curUserId: string;
 }

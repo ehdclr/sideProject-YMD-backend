@@ -1,30 +1,12 @@
 import { HttpExceptionFilter } from './commons/filters/http-exception.filter';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { configSwagger } from './commons/utils/swagger-config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const config = new DocumentBuilder()
-    .setTitle('YMD API 문서')
-    .setDescription('YMD API Swagger 문서입니다.')
-    .setVersion('1.0.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'JWT 토큰을 입력해주세요',
-        in: 'header',
-      },
-      'accessToken',
-    )
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  configSwagger(app);
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(3000);
 }

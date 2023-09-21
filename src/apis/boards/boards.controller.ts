@@ -90,7 +90,7 @@ export class BoardsController {
   @ApiResponse({ status: 404, description: '해당하는 게시글이 없습니다!' })
   @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
   async getBoardDetail(
-    @Param('board_id') id: number,
+    @Param('board_id') id: string,
     @CurrentUser() user,
   ): Promise<object> {
     const curUserId = user.user_info_id;
@@ -106,7 +106,7 @@ export class BoardsController {
   @ApiResponse({ status: 404, description: '수정하려는 게시물이 없습니다!' })
   @ApiResponse({ status: 200, description: '게시물 수정 성공' })
   async updateBoard(
-    @Param('board_id') boardId: number,
+    @Param('board_id') boardId: string,
     @CurrentUser() user,
     @Body() updateBoard: UpdateBoardDto,
   ): Promise<object> {
@@ -131,7 +131,7 @@ export class BoardsController {
   @ApiResponse({ status: 404, description: '삭제하려는 게시물이 없습니다!' })
   @ApiResponse({ status: 200, description: '게시물이 삭제 되었습니다.' })
   async deleteBoard(
-    @Param('board_id') boardId: number,
+    @Param('board_id') boardId: string,
     @CurrentUser() user,
   ): Promise<object> {
     const curUserId = user.user_info_id;

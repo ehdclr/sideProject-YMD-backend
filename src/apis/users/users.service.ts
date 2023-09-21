@@ -1,4 +1,4 @@
-import runInTransaction from 'src/commons/utils/transaction.utils';
+import runInTransaction from 'src/commons/utils/transaction.util';
 import {
   BadRequestException,
   ConflictException,
@@ -16,7 +16,7 @@ import {
   IUsersServiceCreate,
   IUsersServiceUnFollow,
   IUsersServiceUserInfo,
-} from './interfaces/users-service.inerface';
+} from './interfaces/users-service.interface';
 import { UserInfo } from './entities/user-info.entity';
 import { Follow } from './entities/follow.entity';
 
