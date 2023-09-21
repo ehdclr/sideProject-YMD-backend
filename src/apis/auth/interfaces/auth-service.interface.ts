@@ -1,4 +1,4 @@
-import { User } from 'src/apis/users/entities/user.entity';
+
 
 export interface IAuthServiceUsername {
   email: string;
@@ -14,7 +14,9 @@ export interface IAuthServiceLogin {
 }
 
 export interface IAuthServiceUser {
-  user: User;
+  user_id: string;
+  email: string;
+  user_info_id: string;
 }
 
 export interface LoginResponse {
@@ -26,4 +28,9 @@ export interface LoginResponse {
 
 export interface IAuthServiceLogoutRefresh {
   refreshToken: string;
+}
+
+export interface IAuthServiceOauthLogin {
+  provider: string;
+  email: string;
 }

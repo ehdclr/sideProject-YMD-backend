@@ -18,8 +18,8 @@ export enum Sex {
 
 @Entity()
 export class UserInfo {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true })
   @IsNotEmpty()

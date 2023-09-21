@@ -11,8 +11,8 @@ import { UserInfo } from './user-info.entity';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  user_id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ nullable: true })
   @IsEmail()
@@ -27,9 +27,6 @@ export class User {
   @Column({ default: false })
   is_verified_email: boolean;
 
-  @Column({ default: false })
-  is_verified_phone: boolean;
-
   @Column({ default: 'local', nullable: false })
   provider: string;
 
@@ -38,5 +35,4 @@ export class User {
 
   @OneToOne(() => UserInfo, (info) => info.user)
   user_info: UserInfo;
-
 }

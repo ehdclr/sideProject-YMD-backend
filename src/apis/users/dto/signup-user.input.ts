@@ -90,9 +90,9 @@ export class AddFollowDto {
   @IsString()
   followNickname: string;
 
-  @ApiProperty({ description: '로그인한 사용자', example: '1' })
+  @ApiProperty({ description: '로그인한 사용자', example: 'uuid' })
   @IsNumber()
-  userId: number;
+  userId: string;
 }
 
 export class unFollowDto {
@@ -100,7 +100,7 @@ export class unFollowDto {
   @IsString()
   followNickname: string;
 
-  @ApiProperty({ description: '로그인한 사용자', example: '1' })
+  @ApiProperty({ description: '로그인한 사용자', example: 'uuid' })
   @IsNumber()
-  userId: number;
+  userId: string;
 }

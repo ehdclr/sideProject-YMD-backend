@@ -7,7 +7,7 @@ import {
 import { Board, PrivacyLevel } from './entities/board.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfo } from '../users/entities/user-info.entity';
-import runInTransaction from 'src/commons/utils/transaction.utils';
+import runInTransaction from 'src/commons/utils/transaction.util';
 import { Follow } from '../users/entities/follow.entity';
 import {
   IBoardsServiceCreateBoard,
@@ -32,6 +32,12 @@ export class BoardsService {
     return runInTransaction(this.dataSource, async (manager) => {
       const { user_info_id, title, contents, board_image, is_private } =
         createBoard;
+      if (!title || !contents || !is_private) {
+        throw new UnauthorizedException(
+          '제목 혹은 내용 공개여부를 입력해주세요!',
+        );
+      }
+
       const userInfo = await manager.findOne(UserInfo, {
         where: { id: user_info_id },
       });
@@ -52,7 +58,7 @@ export class BoardsService {
 
   //모든 게시글 볼때 (메인화면, 맞팔인 친구 글도 보여야함)
   //맞팔 상태가 아니면 공개글만 보임
-  async getBoards(curUserId: number): Promise<object> {
+  async getBoards(curUserId: string): Promise<object> {
     return runInTransaction(this.dataSource, async (manager) => {
       const boardsList = [];
 
@@ -78,7 +84,7 @@ export class BoardsService {
         }),
       );
 
-      //맞팔해야지만 계정이
+      // 팔로우한 계정 정보 찾기
 
       const mutualFollows = await manager.find(Follow, {
         where: [{ followerId: curUserId }, { followingId: curUserId }],

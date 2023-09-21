@@ -1,4 +1,4 @@
-import runInTransaction from 'src/commons/utils/transaction.utils';
+import runInTransaction from 'src/commons/utils/transaction.util';
 import {
   BadRequestException,
   ConflictException,
@@ -16,7 +16,7 @@ import {
   IUsersServiceCreate,
   IUsersServiceUnFollow,
   IUsersServiceUserInfo,
-} from './interfaces/users-service.inerface';
+} from './interfaces/users-service.interface';
 import { UserInfo } from './entities/user-info.entity';
 import { Follow } from './entities/follow.entity';
 
@@ -208,7 +208,7 @@ export class UsersService {
         });
 
         if (!isCheckFollow) {
-          throw new NotFoundException('이미 팔로우 되어있지 않는 상대입니다.');
+          throw new UnauthorizedException('이미 팔로우 되어있지 않는 상대입니다.');
         }
 
         await manager.delete(Follow, {

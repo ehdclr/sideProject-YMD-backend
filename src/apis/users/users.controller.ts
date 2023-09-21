@@ -45,7 +45,7 @@ export class UsersController {
     return this.usersService.create(signupUserDto);
   }
 
-  //TODO Oauth 회원가입 로직
+  //TODO Oauth 회원가입 로직(user_info)
   // @Post('/oauth-signup')
   // @ApiOperation({ summary: 'Oauth 회원가입' })
   // @ApiResponse({ status: 201, description: 'Oauth회원 정보 등록 성공' })
@@ -55,6 +55,7 @@ export class UsersController {
   //   return this.usersService.oauthSignUp();
   // }
 
+  //TODO 사용자 추가정보(oauth도 동일 로직(추후 수정), 이미지 업로드 )
   @Post('/:email/userinfo')
   @ApiOperation({ summary: '사용자 추가정보' })
   @ApiResponse({ status: 201, description: '사용자 정보 등록 완료.' })
@@ -73,6 +74,32 @@ export class UsersController {
   ): Promise<any> {
     return this.usersService.addUserInfo({ email, ...adduserInfoDto });
   }
+
+  //TODO 사용자 정보 얻기
+
+  @Get('/:user_nickname/userprofile')
+  @UseGuards(AuthGuard('access'))
+  @ApiParam({
+    name: 'user_nickname',
+    description: '닉네임',
+    type: 'string',
+    example: 'test',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청입니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '사용자 정보를 찾았습니다!',
+    type: UserResponseDto,
+  })
+  //메인화면에서 보이는 글
+  async getUserProfile(@Param('user_nickname') userNickname: string) {
+    return this.usersService.getUserProfile(userNickname);
+  }
+
+  //TODO 사용자 정보 수정 -> 이미지 수정가능
 
   //TODO 사용자 팔로잉 팔로우 API
   @UseGuards(AuthGuard('access'))
@@ -121,7 +148,7 @@ export class UsersController {
     description: '본인을 언팔로우 할 수 없습니다!',
   })
   @ApiResponse({
-    status: 404,
+    status: 401,
     description: '이미 팔로우 되어있지 않는 상대입니다.',
   })
   @ApiResponse({
@@ -136,30 +163,6 @@ export class UsersController {
     const followInfo: unFollowDto = { followNickname, userId };
 
     return this.usersService.unFollow(followInfo);
-  }
-
-  //TODO 사용자 정보 얻기
-
-  @Get('/:user_nickname/userprofile')
-  @UseGuards(AuthGuard('access'))
-  @ApiParam({
-    name: 'user_nickname',
-    description: '닉네임',
-    type: 'string',
-    example: 'test',
-  })
-  @ApiResponse({
-    status: 400,
-    description: '잘못된 요청입니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '사용자 정보를 찾았습니다!',
-    type: UserResponseDto,
-  })
-  //메인화면에서 보이는 글
-  async getUserProfile(@Param('user_nickname') userNickname: string) {
-    return this.usersService.getUserProfile(userNickname);
   }
 
   //TODO 사용자 검색 API

@@ -16,9 +16,9 @@ export enum PrivacyLevel {
 
 @Entity()
 export class Board {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   @ApiProperty({ description: '게시물 id값' })
-  id: number;
+  id: string;
 
   @Column({ nullable: true })
   @ApiProperty({ description: '게시물에 업로드한 이미지' })
@@ -46,5 +46,5 @@ export class Board {
 
   @Column()
   @ApiProperty({ description: '유저 정보 아이디값' })
-  user_info_id: number;
+  user_info_id: string;
 }

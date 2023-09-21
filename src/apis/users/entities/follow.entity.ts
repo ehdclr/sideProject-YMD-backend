@@ -9,20 +9,20 @@ import { UserInfo } from './user-info.entity';
 
 @Entity()
 export class Follow {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ManyToOne(() => UserInfo, (userInfo) => userInfo.following)
   @JoinColumn({ name: 'followerId' })
   follower: UserInfo;
 
   @Column()
-  followerId: number;
+  followerId: string;
 
   @ManyToOne(() => UserInfo, (userInfo) => userInfo.followers)
   @JoinColumn({ name: 'followingId' })
   following: UserInfo;
 
   @Column()
-  followingId: number;
+  followingId: string;
 }
